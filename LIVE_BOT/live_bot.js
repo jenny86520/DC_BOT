@@ -66,7 +66,7 @@ bot.on("message", msg => {
                     if (avatar.files) msg.channel.send(`${msg.author}`, avatar);
                     break;
                 default:
-                    msg.channel.send('OAOa？');
+                    //msg.channel.send('OAOa？');
             }
 
         }
