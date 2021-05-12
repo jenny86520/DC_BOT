@@ -1,68 +1,102 @@
-var Discord = require('discord.io');
-var logger = require('winston');
+var Discord = require('discord.js');
+// var logger = require('winston');
 var auth = require('./auth.json');
-// Configure logger settings
-logger.remove(logger.transports.Console);
-logger.add(new logger.transports.Console, {
-    colorize: true
-});
-logger.level = "debug";
 // Initialize Discord Bot
-var bot = new Discord.Client({
-   token: auth.token,
-   autorun: true
-});
+var bot = new Discord.Client();
+bot.login(auth.token);
+
 bot.on("ready", function (evt) {
-    logger.info("Connected");
-    logger.info("Logged in as: ");
-    logger.info(bot.username + " - (" + bot.id + ")");
+    console.log('Connected');
+    console.log(`Logged in as ${bot.user.username} - ${bot.user.id}!`);
 });
-bot.on("message", function (user, userID, channelID, message, evt) {
-    // 關鍵字回覆
-    if(message.toLowerCase().includes('yuuma')){
-        bot.sendMessage({
-            to: channelID,
-            message: 'はい!!'
-        })
+bot.on("message", msg => {
+    // 前置判斷
+    try{
+        // 判別需為群組訊息(非私訊)
+        if(!msg.guild || !msg.member) return;
+        // 判別是否為機器人訊息
+        if(!msg.member.user || msg.member.user.bot) return;
+    }
+    catch(err){
+        console.log(err);
+        return;
     }
     
-    // 指令回覆
-    const tag = message.substring(0, 1);
-    let msg = '';
-    if (tag == '!') {
-        var args = message.substring(1).split(' ');
-        var cmd = args[0];
-        if(cmd){
-    
-        switch(cmd) {
-            case 'test':
-                msg = 'loading...';
-                bot.sendMessage({
-                    to: channelID,
-                    message: msg,
-                });
-                break;
-            case 'rec':
-                let url = args[1];
-                if(!url || !(url.startsWith('http://')|| url.startsWith('https://'))){
-                    msg = '打咩！後面要接直播連結唷 OAO';
-                }
-                else{
-                    msg = user + ' 正在進行直播！（已訂選）';
-                    //message.guild.channels.find("name", "瘋狂實驗室").setName("[REC]瘋狂實驗室");
-                }
-                bot.sendMessage({
-                    to: channelID,
-                    message: msg,
-                });
-            break;
-            default:
-                bot.sendMessage({
-                    to: channelID,
-                    message: 'OAOa？'
-                });
-         }
-
+    //字串分析
+    try {
+        // 關鍵字回覆
+        if(msg.content.toLowerCase().includes('yuuma')){
+            msg.channel.send('はい!!');
         }
-     }
+
+        // 指令回覆
+        const prefix = '!' //前綴符號定義
+        if (msg.content.substring(0, prefix.length) === prefix) 
+        {
+            const cmd = msg.content.substring(prefix.length).split(' '); //以空白分割前綴以後的字串
+        
+            switch(cmd[0]) {
+                case 'test':
+                    msg.channel.send('loading...');
+                    break;
+                case 'rec':
+                    if(cmd[1] === 'start'){       
+                        let url = cmd[2];
+                        if(!url || !(url.startsWith('http://')|| url.startsWith('https://'))){
+                            msg.reply('打咩！後面要接直播連結唷 OAO');
+                        }
+                        else{
+                            console.log('Finding live channel...');
+                            let channel = msg.guild.channels.cache.find(x=>x.name.includes("瘋狂實驗室"));
+                            if(channel){
+                                console.log(`Found channel: ${channel.name}`);
+                                channel.setName("【rec】瘋狂實驗室");
+                                msg.reply(' 正在進行直播！（REC已掛上，已訂選）');
+                            }    
+                            else{
+                                console.log('Not Found channel');
+                                msg.reply(' 正在進行直播！（REC未掛上）');
+                            } 
+                        }
+                    }
+                    else if (cmd[1] === 'end'){
+                        msg.reply(' 結束直播！（已取消訂選）');
+                            let channel = msg.guild.channels.cache.find(x=>x.name.includes("【rec】"));
+                            channel.setName(channel.name.replace('【rec】',''));
+                    }
+                break;
+                case 'myAvatar':
+                    const avatar = GetMyAvatar(msg);
+                    if (avatar.files) msg.channel.send(`${msg.author}`, avatar);
+                    break;
+                default:
+                    msg.channel.send('OAOa？');
+             }
+    
+            }
+        }
+    
+    
+    catch(err){
+        console.log(err);
+        return;
+    }
+
+
 });
+
+//獲取頭像
+function GetMyAvatar(msg) {
+    try {
+        console.log(`GetMyAvatar: ${msg.author.username}`);
+        return {
+            files: [{
+                attachment: msg.author.displayAvatarURL(),
+                name: 'avatar.jpg'
+            }]
+        };
+    } catch (err) {
+        console.log(`GetMyAvatar Error: ${msg.author.username}`);
+        return;
+    }
+}
