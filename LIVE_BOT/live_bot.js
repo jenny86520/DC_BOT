@@ -11,73 +11,67 @@ bot.on("ready", function (evt) {
 });
 bot.on("message", msg => {
     // 前置判斷
-    try{
+    try {
         // 判別需為群組訊息(非私訊)
-        if(!msg.guild || !msg.member) return;
+        if (!msg.guild || !msg.member) return;
         // 判別是否為機器人訊息
-        if(!msg.member.user || msg.member.user.bot) return;
+        if (!msg.member.user || msg.member.user.bot) return;
     }
-    catch(err){
+    catch (err) {
         console.log(err);
         return;
     }
-    
+
     //字串分析
     try {
         // 關鍵字回覆
-        if(msg.content.toLowerCase().includes('yuuma')){
+        if (msg.content.toLowerCase().includes('yuuma')) {
             msg.channel.send('はい!!');
         }
 
         // 指令回覆
         const prefix = '!' //前綴符號定義
-        if (msg.content.substring(0, prefix.length) === prefix) 
-        {
+        if (msg.content.substring(0, prefix.length) === prefix) {
             const cmd = msg.content.substring(prefix.length).split(' '); //以空白分割前綴以後的字串
-        
-            switch(cmd[0]) {
+
+            switch (cmd[0]) {
                 case 'test':
                     msg.channel.send('loading...');
                     break;
                 case 'rec':
-                    if(cmd[1] === 'start'){       
-                        let url = cmd[2];
-                        if(!url || !(url.startsWith('http://')|| url.startsWith('https://'))){
+                    let action = cmd[1];
+                    let channelName = cmd[2];
+                    let url = cmd[3];
+
+                    if (action === 'start') {
+                        if (!url) {
+                            msg.reply('要給 頻道名稱 和 直播連結 唷 OAO');
+                            return;
+                        }
+                        else if (!(url.startsWith('http://') || url.startsWith('https://'))) {
                             msg.reply('打咩！後面要接直播連結唷 OAO');
-                        }
-                        else{
-                            console.log('Finding live channel...');
-                            let channel = msg.guild.channels.cache.find(x=>x.name.includes("瘋狂實驗室"));
-                            if(channel){
-                                console.log(`Found channel: ${channel.name}`);
-                                channel.setName("【rec】瘋狂實驗室");
-                                msg.reply(' 正在進行直播！（REC已掛上，已訂選）');
-                            }    
-                            else{
-                                console.log('Not Found channel');
-                                msg.reply(' 正在進行直播！（REC未掛上）');
-                            } 
+                            return;
                         }
                     }
-                    else if (cmd[1] === 'end'){
-                        msg.reply(' 結束直播！（已取消訂選）');
-                            let channel = msg.guild.channels.cache.find(x=>x.name.includes("【rec】"));
-                            channel.setName(channel.name.replace('【rec】',''));
-                    }
-                break;
+
+                    console.log('===SetLiveChannel START===');
+                    msg.reply(SetLiveChannel(msg, action, channelName));
+                    console.log('===SetLiveChannel END===');
+
+                    break;
                 case 'myAvatar':
+                    console.log('===GetMyAvatar START===');
                     const avatar = GetMyAvatar(msg);
+                    console.log('===GetMyAvatar START===');
                     if (avatar.files) msg.channel.send(`${msg.author}`, avatar);
                     break;
                 default:
                     msg.channel.send('OAOa？');
-             }
-    
             }
+
         }
-    
-    
-    catch(err){
+    }
+    catch (err) {
         console.log(err);
         return;
     }
@@ -98,5 +92,40 @@ function GetMyAvatar(msg) {
     } catch (err) {
         console.log(`GetMyAvatar Error: ${msg.author.username}`);
         return;
+    }
+}
+
+// 回應LIVE(上播下播)，回傳replyMsg
+// tip: 更改頻道名稱兩次後，需等候五分鐘才能再改
+function SetLiveChannel(msg, action, channelName) {
+
+    let prefix = '【rec】';
+
+    console.log('Finding channel...');
+    let channel = msg.guild.channels.cache.find(x => x.name.toLowerCase().includes(channelName.toLowerCase()));
+
+    if (channel) {
+        console.log(`Found channel: ${channel.name}`);
+
+        switch (action) {
+            case 'start':
+                channel.setName(`${prefix}${channel.name}`);
+                console.log(`setName: ${prefix}${channel.name}`);
+                msg.pin({ reason: 'live' });
+                console.log(`pin message`);
+
+                return ` 正在 ${channel.name} 進行直播！（已釘選）`;
+            case 'end':
+                const newName = channel.name.replace(`${prefix}`, '');
+                channel.setName(newName);
+                console.log(`setName: ${newName}`);
+                // TODO: msg.unpin({ reason: 'live off' });
+                return ` ${newName} 結束直播！（請記得取消釘選唷）`;
+        }
+
+    }
+    else {
+        console.log('Not Found channel');
+        return `${channelName} 在哪裡OAOa`;
     }
 }
