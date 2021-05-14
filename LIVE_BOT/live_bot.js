@@ -15,7 +15,7 @@ bot.on("message", msg => {
         // 判別需為群組訊息(非私訊)
         if (!msg.guild || !msg.member) return;
         // 判別是否為機器人訊息
-        if (!msg.member.user || msg.member.user.bot) return;
+        // if (!msg.member.user || msg.member.user.bot) return;
     }
     catch (err) {
         console.log(err);
@@ -66,7 +66,7 @@ bot.on("message", msg => {
                     if (avatar.files) msg.channel.send(`${msg.author}`, avatar);
                     break;
                 default:
-                    //msg.channel.send('OAOa？');
+                //msg.channel.send('OAOa？');
             }
 
         }
@@ -102,7 +102,13 @@ function SetLiveChannel(msg, action, channelName) {
     let prefix = '【rec】';
 
     console.log('Finding channel...');
-    let channel = msg.guild.channels.cache.find(x => x.name.toLowerCase().includes(channelName.toLowerCase()));
+    let channel = msg.guild.channels.cache.find(x => {
+        if (x.name.length > 3) {
+            let exitChannel = x.name.substring(3).toLowerCase();
+            return channelName.toLowerCase().includes(exitChannel) || exitChannel.includes(channelName.toLowerCase());
+        }
+        return false;
+    });
 
     if (channel) {
         console.log(`Found channel: ${channel.name}`);
