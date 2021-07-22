@@ -1,6 +1,7 @@
 var Discord = require('discord.js');
 // var logger = require('winston');
 var auth = require('./auth.json');
+var channelsInfo = require('./channelsInfo.json');
 // Initialize Discord Bot
 var bot = new Discord.Client();
 bot.login(auth.token);
@@ -9,13 +10,19 @@ bot.on("ready", function (evt) {
     console.log('Connected');
     console.log(`Logged in as ${bot.user.username} - ${bot.user.id}!`);
 });
+// welcome
+bot.on("guildMemberAdd", member => {
+    console.log(`New Member Add as ${member.user.username} - ${member.user.id}`);
+    member.guild.channels.cache.get(channelsInfo['世界頻']).send(`<@${member.user.id}> おはよう！請到 ${member.guild.channels.cache.get(channelsInfo['一般公告欄']).toString()} 查看釘選訊息來了解這個伺服唷^^/`);
+});
+// 訊息
 bot.on("message", msg => {
     // 前置判斷
     try {
         // 判別需為群組訊息(非私訊)
         if (!msg.guild || !msg.member) return;
         // 判別是否為機器人訊息
-        if (!msg.member.user || msg.member.user.bot) return;
+        // if (!msg.member.user || msg.member.user.bot) return;
     }
     catch (err) {
         console.log(err);
@@ -66,7 +73,7 @@ bot.on("message", msg => {
                     if (avatar.files) msg.channel.send(`${msg.author}`, avatar);
                     break;
                 default:
-                    msg.channel.send('OAOa？');
+                //msg.channel.send('OAOa？');
             }
 
         }
@@ -102,7 +109,13 @@ function SetLiveChannel(msg, action, channelName) {
     let prefix = '【rec】';
 
     console.log('Finding channel...');
-    let channel = msg.guild.channels.cache.find(x => x.name.toLowerCase().includes(channelName.toLowerCase()));
+    let channel = msg.guild.channels.cache.find(x => {
+        if (x.name.length > 3) {
+            let exitChannel = x.name.substring(3).toLowerCase();
+            return channelName.toLowerCase().includes(exitChannel) || exitChannel.includes(channelName.toLowerCase());
+        }
+        return false;
+    });
 
     if (channel) {
         console.log(`Found channel: ${channel.name}`);
