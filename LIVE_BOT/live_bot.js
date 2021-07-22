@@ -1,6 +1,7 @@
 var Discord = require('discord.js');
 // var logger = require('winston');
 var auth = require('./auth.json');
+var channelsInfo = require('./channelsInfo.json');
 // Initialize Discord Bot
 var bot = new Discord.Client();
 bot.login(auth.token);
@@ -9,6 +10,12 @@ bot.on("ready", function (evt) {
     console.log('Connected');
     console.log(`Logged in as ${bot.user.username} - ${bot.user.id}!`);
 });
+// welcome
+bot.on("guildMemberAdd", member => {
+    console.log(`New Member Add as ${member.user.username} - ${member.user.id}`);
+    member.guild.channels.cache.get(channelsInfo['世界頻']).send(`<@${member.user.id}> おはよう！請到 ${member.guild.channels.cache.get(channelsInfo['一般公告欄']).toString()} 查看釘選訊息來了解這個伺服唷^^/`);
+});
+// 訊息
 bot.on("message", msg => {
     // 前置判斷
     try {
