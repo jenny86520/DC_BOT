@@ -132,8 +132,14 @@ function SetLiveChannel(msg, action, channelName) {
                 const newName = channel.name.replace(`${prefix}`, '');
                 channel.setName(newName);
                 console.log(`setName: ${newName}`);
-                // TODO: msg.unpin({ reason: 'live off' });
-                return ` ${newName} 結束直播！（請記得取消釘選唷）`;
+                msg.channel.messages
+                .fetchPinned()
+                .then(pinnedMsgs=>{
+                    pinnedMsgs.find(x=>x.content.toLowerCase().includes(channelName.toLowerCase())).unpin();
+                });
+                console.log(`unpin message`);
+
+                return ` ${newName} 結束直播！（已取消釘選）`;
         }
 
     }
